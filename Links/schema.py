@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-
+from graphql_jwt.decorators import login_required, permission_required
 from .models import Link
 
 
@@ -12,6 +12,7 @@ class LinkType(DjangoObjectType):
 class Query(graphene.ObjectType):
     links = graphene.List(LinkType)
 
+    @permission_required('graphQl.view_link')
     def resolve_links(self, info, **kwargs):
         return Link.objects.all()
 
@@ -27,6 +28,9 @@ class CreateLink(graphene.Mutation):
         description = graphene.String()
 
     # 3
+
+    @login_required
+    @permission_required('graphQl.add_link')
     def mutate(self, info, url, description):
         link = Link(url=url, description=description)
         link.save()
@@ -41,4 +45,3 @@ class CreateLink(graphene.Mutation):
 # 4
 class Mutation(graphene.ObjectType):
     create_link = CreateLink.Field()
-
