@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'Links',
     'usr',
     'corsheaders',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 ]
 
 MIDDLEWARE = [
