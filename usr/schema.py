@@ -29,12 +29,21 @@ class CreateUser(graphene.Mutation):
         return CreateUser(user=user)
 
 
+class GroupType(DjangoObjectType):
+    class Meta:
+        model = Group
+
+
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
     me = graphene.Field(UserType)
+    group = graphene.Field(GroupType)
 
     def resolve_users(self, info):
         return get_user_model().objects.all()
+
+    def resolve_group(self):
+        return Group.objects.all()
 
     def resolve_me(self, info):
         user = info.context.user
@@ -44,21 +53,12 @@ class Query(graphene.ObjectType):
         return user
 
 
-class GroupType(DjangoObjectType):
-    class Meta:
-        model = Group
-
-
 class CreateGroup(graphene.Mutation):
-    group = graphene.Field(GroupType)
+    group = graphene.Field(graphene.List(GroupType))
 
     class Arguments:
         id = graphene.Int()
         name = graphene.String()
-
-    @classmethod
-    def get_queryset(self, info, **kwargs):
-        return info.context.user.groups.all()
 
     @login_required
     def mutate(self, info, name):
