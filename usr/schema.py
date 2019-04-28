@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
-
 import graphene
 from graphene_django import DjangoObjectType
+from django.contrib.auth.models import Group
+from graphql_jwt.decorators import login_required
 
 
 class UserType(DjangoObjectType):
@@ -43,5 +44,29 @@ class Query(graphene.ObjectType):
         return user
 
 
+class GroupType(DjangoObjectType):
+    class Meta:
+        model = Group
+
+
+class CreateGroup(graphene.Mutation):
+    group = graphene.Field(GroupType)
+
+    class Arguments:
+        id = graphene.Int()
+        name = graphene.String()
+
+    @classmethod
+    def get_queryset(self, info, **kwargs):
+        return info.context.user.groups.all()
+
+    @login_required
+    def mutate(self, info, name):
+        group = Group.objects.get_or_create(
+            name=name)
+        return CreateGroup(group=group)
+
+
 class Mutation(graphene.ObjectType):
     create_user = CreateUser.Field()
+    create_group = CreateGroup.Field()
