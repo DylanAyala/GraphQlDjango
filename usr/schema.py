@@ -3,11 +3,33 @@ import graphene
 from graphene_django import DjangoObjectType
 from django.contrib.auth.models import Group, Permission
 from graphql_jwt.decorators import login_required
+from graphene import relay, AbstractType, ObjectType
+from graphene_django.filter import DjangoFilterConnectionField
 
 
 class UserType(DjangoObjectType):
     class Meta:
         model = get_user_model()
+
+
+class GroupType(DjangoObjectType):
+    class Meta:
+        model = Group
+
+
+class PermissionType(DjangoObjectType):
+    class Meta:
+        model = Permission
+
+
+class UserNode(DjangoObjectType):
+    class Meta:
+        model = get_user_model()
+        filter_fields = {
+            'id': ['exact'],
+            'username': ['exact', 'icontains', 'istartswith'],
+        }
+        interfaces = (relay.Node,)
 
 
 class CreateUser(graphene.Mutation):
@@ -27,39 +49,6 @@ class CreateUser(graphene.Mutation):
         user.save()
 
         return CreateUser(user=user)
-
-
-class GroupType(DjangoObjectType):
-    class Meta:
-        model = Group
-
-
-class PermissionType(DjangoObjectType):
-    class Meta:
-        model = Permission
-
-
-class Query(graphene.ObjectType):
-    users = graphene.List(UserType)
-    me = graphene.Field(UserType)
-    group = graphene.Field(graphene.List(GroupType))
-    permission = graphene.List(PermissionType)
-
-    def resolve_users(self, info):
-        return get_user_model().objects.all()
-
-    def resolve_group(self, info):
-        return Group.objects.all()
-
-    def resolve_me(self, info):
-        user = info.context.user
-        if user.is_anonymous:
-            raise Exception('Not logged in!')
-
-        return user
-
-    def resolve_permission(self, info):
-        return Permission.objects.all()
 
 
 class CreateGroup(graphene.Mutation):
@@ -104,6 +93,30 @@ class PermissionGroup(graphene.Mutation):
         group = Group.objects.get(name=name)
         group.permissions.add(permission)
         return UserGroup(group=group)
+
+
+class Query(graphene.ObjectType):
+    users = graphene.List(UserType)
+    me = graphene.Field(UserType)
+    group = graphene.Field(graphene.List(GroupType))
+    permission = graphene.List(PermissionType)
+    user = DjangoFilterConnectionField(UserNode)
+
+    def resolve_users(self, info):
+        return get_user_model().objects.all()
+
+    def resolve_group(self, info):
+        return Group.objects.all()
+
+    def resolve_me(self, info):
+        user = info.context.user
+        if user.is_anonymous:
+            raise Exception('Not logged in!')
+
+        return user
+
+    def resolve_permission(self, info):
+        return Permission.objects.all()
 
 
 class Mutation(graphene.ObjectType):
