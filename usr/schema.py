@@ -1,7 +1,6 @@
-from django.contrib.auth import get_user_model
+from .models import User, Group, Permission
 import graphene
 from graphene_django import DjangoObjectType
-from django.contrib.auth.models import Group, Permission
 from graphql_jwt.decorators import login_required
 from graphene import relay, AbstractType, ObjectType
 from graphene_django.filter import DjangoFilterConnectionField
@@ -9,7 +8,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 
 class UserType(DjangoObjectType):
     class Meta:
-        model = get_user_model()
+        model = User
 
 
 class GroupType(DjangoObjectType):
@@ -24,7 +23,7 @@ class PermissionType(DjangoObjectType):
 
 class UserNode(DjangoObjectType):
     class Meta:
-        model = get_user_model()
+        model = User
         filter_fields = {
             'id': ['exact'],
             'username': ['exact', 'icontains', 'istartswith'],
@@ -41,10 +40,8 @@ class CreateUser(graphene.Mutation):
         email = graphene.String(required=True)
 
     def mutate(self, info, username, password, email):
-        user = get_user_model()(
-            username=username,
-            email=email,
-        )
+        user = User(username=username,
+                    email=email)
         user.set_password(password)
         user.save()
 
@@ -103,7 +100,7 @@ class Query(graphene.ObjectType):
     user = DjangoFilterConnectionField(UserNode)
 
     def resolve_users(self, info):
-        return get_user_model().objects.all()
+        return User().objects.all()
 
     def resolve_group(self, info):
         return Group.objects.all()

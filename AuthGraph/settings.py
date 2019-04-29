@@ -145,3 +145,5 @@ GRAPHQL_JWT = {
     'JWT_EXPIRATION_DELTA': timedelta(minutes=3600),
     'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
 }
+
+AUTH_USER_MODEL = "usr.User"

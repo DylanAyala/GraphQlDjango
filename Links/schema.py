@@ -2,6 +2,9 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphql_jwt.decorators import login_required, permission_required
 from .models import Link
+from graphene import relay
+from graphene_django.filter import DjangoFilterConnectionField
+import django_filters
 
 
 class LinkType(DjangoObjectType):
@@ -9,12 +12,28 @@ class LinkType(DjangoObjectType):
         model = Link
 
 
+class LinkNode(DjangoObjectType):
+    class Meta:
+        model = Link
+        filter_fields = {
+            'id': ['exact'],
+            'url': ['exact', 'icontains', 'istartswith'],
+            'description': ['exact', 'icontains', 'istartswith']
+        }
+        interfaces = (relay.Node,)
+
+
 class Query(graphene.ObjectType):
     links = graphene.List(LinkType)
+    link = DjangoFilterConnectionField(LinkNode)
 
     @permission_required('graphQl.view_link')
     def resolve_links(self, info, **kwargs):
         return Link.objects.all()
+
+    @permission_required('graphQl.view_link')
+    def resolve_link(self, info, url):
+        return Link.objects.filter(url=url)
 
 
 class CreateLink(graphene.Mutation):
