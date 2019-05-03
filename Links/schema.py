@@ -1,7 +1,7 @@
 import graphene
 from graphene_django import DjangoObjectType
 from graphql_jwt.decorators import login_required, permission_required
-from .models import Link
+from .models import Link, Contact
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 import django_filters
@@ -23,9 +23,15 @@ class LinkNode(DjangoObjectType):
         interfaces = (relay.Node,)
 
 
+class ContactType(DjangoObjectType):
+    class Meta:
+        model = Contact
+
+
 class Query(graphene.ObjectType):
     links = graphene.List(LinkType)
     link = DjangoFilterConnectionField(LinkNode)
+    contact = graphene.List(ContactType)
 
     @permission_required('graphQl.view_link')
     def resolve_links(self, info, **kwargs):
@@ -34,6 +40,9 @@ class Query(graphene.ObjectType):
     @permission_required('graphQl.view_link')
     def resolve_link(self, info, url):
         return Link.objects.filter(url=url)
+
+    def resolve_contact(self, info):
+        return Contact.objects.all()
 
 
 class CreateLink(graphene.Mutation):
@@ -61,6 +70,44 @@ class CreateLink(graphene.Mutation):
         )
 
 
+class CreateContact(graphene.Mutation):
+    contact = graphene.Field(ContactType)
+
+    class Arguments:
+        name = graphene.String()
+        phone = graphene.Int()
+        email = graphene.String()
+
+    def mutate(self, info, name, phone, email):
+        contact = Contact(name=name, phone=phone, email=email)
+        contact.save()
+        return CreateContact(contact=contact)
+
+
+class UpdateContact(graphene.Mutation):
+    contact = graphene.Field(ContactType)
+
+    class Arguments:
+        id = graphene.Int()
+        name = graphene.String()
+        phone = graphene.Int()
+        email = graphene.String()
+
+    def mutate(self, info, id, name, phone, email):
+        contact = Contact.objects.filter(id=id)
+        if contact:
+            contact.update(name=name, phone=phone, email=email)
+        else:
+            raise Exception('no se encontro el usuario con el id suministrado')
+        if contact:
+            contact = Contact(id=id, name=name, phone=phone, email=email)
+        else:
+            raise Exception('No se se puedo editar')
+        return UpdateContact(contact=contact)
+
+
 # 4
 class Mutation(graphene.ObjectType):
     create_link = CreateLink.Field()
+    create_contact = CreateContact.Field()
+    update_contact = UpdateContact.Field()

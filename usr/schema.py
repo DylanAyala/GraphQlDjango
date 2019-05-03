@@ -74,7 +74,7 @@ class UserGroup(graphene.Mutation):
     def mutate(self, info, user, name):
         group = Group.objects.get(name=name)
         group.user_set.add(user)
-        return UserGroup(group=group)
+        return UserGroup(group=group, user=user)
 
 
 class PermissionGroup(graphene.Mutation):
