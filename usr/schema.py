@@ -57,8 +57,9 @@ class CreateGroup(graphene.Mutation):
 
     @login_required
     def mutate(self, info, name):
-        group = Group.objects.get_or_create(
+        group = Group.objects.create(
             name=name)
+        print(group)
         return CreateGroup(group=group)
 
 
